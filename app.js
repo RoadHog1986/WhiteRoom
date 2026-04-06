@@ -660,14 +660,23 @@ document.getElementById('servicePriceRange').addEventListener('change', (e) => {
   const singlePriceLabel = document.getElementById('singlePriceLabel');
   const minPriceLabel = document.getElementById('minPriceLabel');
   const maxPriceLabel = document.getElementById('maxPriceLabel');
+  const servicePrice = document.getElementById('servicePrice');
+  const serviceMinPrice = document.getElementById('serviceMinPrice');
+  const serviceMaxPrice = document.getElementById('serviceMaxPrice');
   if (isRange) {
     singlePriceLabel.style.display = 'none';
     minPriceLabel.style.display = 'block';
     maxPriceLabel.style.display = 'block';
+    servicePrice.required = false;
+    serviceMinPrice.required = true;
+    serviceMaxPrice.required = true;
   } else {
     singlePriceLabel.style.display = 'block';
     minPriceLabel.style.display = 'none';
     maxPriceLabel.style.display = 'none';
+    servicePrice.required = true;
+    serviceMinPrice.required = false;
+    serviceMaxPrice.required = false;
   }
 });
 
