@@ -180,17 +180,17 @@ function updateTotal() {
 
   let finalTotal = total;
 
-  // Націнка за домашню тварину (тільки для прибирання за площею)
+  // Націнка за домашню тварину (тільки для прибирання)
   if (petSurchargeEnabled) {
-    const areaServices = services.filter(service =>
-      selectedQuantities[service.id] > 0 && service.unit === 'м²'
+    const cleaningServices = services.filter(service =>
+      selectedQuantities[service.id] > 0 && service.category === 'cleaning'
     );
-    const areaTotal = areaServices.reduce((sum, service) => {
+    const cleaningTotal = cleaningServices.reduce((sum, service) => {
       const qty = Number(selectedQuantities[service.id] || 0);
       const price = Number(selectedPrices[service.id] || service.price);
       return sum + Math.max(qty, 0) * price;
     }, 0);
-    finalTotal += areaTotal * (petSurchargePercent / 100);
+    finalTotal += cleaningTotal * (petSurchargePercent / 100);
   }
 
   // Націнка за екологічну хімію
@@ -314,15 +314,15 @@ function generatePDF() {
   let surcharges = [];
 
   if (petSurchargeEnabled) {
-    const areaServices = services.filter(service =>
-      selectedQuantities[service.id] > 0 && service.unit === 'м²'
+    const cleaningServices = services.filter(service =>
+      selectedQuantities[service.id] > 0 && service.category === 'cleaning'
     );
-    const areaTotal = areaServices.reduce((sum, service) => {
+    const cleaningTotal = cleaningServices.reduce((sum, service) => {
       const qty = Number(selectedQuantities[service.id] || 0);
       const price = Number(selectedPrices[service.id] || service.price);
       return sum + Math.max(qty, 0) * price;
     }, 0);
-    const petSurcharge = areaTotal * (petSurchargePercent / 100);
+    const petSurcharge = cleaningTotal * (petSurchargePercent / 100);
     finalTotal += petSurcharge;
     surcharges.push(`Націнка за домашню тварину (${petSurchargePercent}%): ${formatPrice(petSurcharge)}`);
   }

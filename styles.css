@@ -299,9 +299,10 @@ small {
 }
 
 .surcharge-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   font-size: 0.95rem;
 }
 
@@ -310,17 +311,29 @@ small {
 }
 
 .surcharge-item input[type="number"] {
-  width: 60px;
+  width: 72px;
   text-align: center;
   border: 1px solid #d3dce7;
   border-radius: 6px;
-  padding: 4px 6px;
-  font-size: 0.9rem;
+  padding: 8px 8px;
+  font-size: 0.95rem;
 }
 
 .surcharge-item span:last-child {
   color: #576774;
   font-size: 0.9rem;
+}
+
+@media (max-width: 520px) {
+  .surcharge-item {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    gap: 8px;
+  }
+  .surcharge-item input[type="number"],
+  .surcharge-item span:last-child {
+    justify-self: start;
+  }
 }
 
 .total-card strong {
