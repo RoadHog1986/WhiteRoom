@@ -1,6 +1,11 @@
 const SERVICE_KEY = 'cleaningServices-v1';
 const installButton = document.getElementById('installButton');
 const serviceSearch = document.getElementById('serviceSearch');
+const serviceForm = document.getElementById('serviceForm');
+const servicesList = document.getElementById('servicesList');
+const orderPanel = document.getElementById('orderPanel');
+const orderTotal = document.getElementById('orderTotal');
+const clearSelection = document.getElementById('clearSelection');
 
 let deferredPrompt = null;
 let services = [];
