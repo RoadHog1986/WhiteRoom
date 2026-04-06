@@ -91,6 +91,20 @@
     <section class="panel">
       <h2>Калькулятор</h2>
       <div id="orderPanel" class="order-panel"></div>
+      <div class="surcharges">
+        <label class="surcharge-item">
+          <input type="checkbox" id="petSurcharge" />
+          <span>Націнка за домашню тварину</span>
+          <input type="number" id="petSurchargePercent" min="0" step="0.1" value="10" placeholder="10" />
+          <span>%</span>
+        </label>
+        <label class="surcharge-item">
+          <input type="checkbox" id="ecoChemistry" />
+          <span>Екологічна хімія</span>
+          <input type="number" id="ecoChemistryAmount" min="0" step="0.01" value="70" placeholder="70" />
+          <span>RON</span>
+        </label>
+      </div>
       <div class="total-card">
         <div>
           <p>Загальна сума</p>

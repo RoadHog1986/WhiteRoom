@@ -289,15 +289,38 @@ small {
   min-width: 120px;
 }
 
-.total-card {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  background: #eef6fb;
-  border-radius: 18px;
+.surcharges {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
   padding: 16px;
-  gap: 16px;
+  background: #f8fbff;
+  border-radius: 12px;
+}
+
+.surcharge-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+}
+
+.surcharge-item input[type="checkbox"] {
+  margin: 0;
+}
+
+.surcharge-item input[type="number"] {
+  width: 60px;
+  text-align: center;
+  border: 1px solid #d3dce7;
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 0.9rem;
+}
+
+.surcharge-item span:last-child {
+  color: #576774;
+  font-size: 0.9rem;
 }
 
 .total-card strong {

@@ -7,6 +7,10 @@ let services = [];
 let selectedQuantities = {};
 let selectedPrices = {};
 let searchQuery = '';
+let petSurchargePercent = 10;
+let ecoChemistryAmount = 70;
+let petSurchargeEnabled = false;
+let ecoChemistryEnabled = false;
 let collapsedCategories = { cleaning: true, extra: true };
 
 const CATEGORY_LABELS = {
@@ -173,7 +177,28 @@ function updateTotal() {
     const price = Number(selectedPrices[service.id] || service.price);
     return sum + Math.max(qty, 0) * price;
   }, 0);
-  orderTotal.textContent = formatPrice(total);
+
+  let finalTotal = total;
+
+  // Націнка за домашню тварину (тільки для прибирання за площею)
+  if (petSurchargeEnabled) {
+    const areaServices = services.filter(service =>
+      selectedQuantities[service.id] > 0 && service.unit === 'м²'
+    );
+    const areaTotal = areaServices.reduce((sum, service) => {
+      const qty = Number(selectedQuantities[service.id] || 0);
+      const price = Number(selectedPrices[service.id] || service.price);
+      return sum + Math.max(qty, 0) * price;
+    }, 0);
+    finalTotal += areaTotal * (petSurchargePercent / 100);
+  }
+
+  // Націнка за екологічну хімію
+  if (ecoChemistryEnabled) {
+    finalTotal += ecoChemistryAmount;
+  }
+
+  orderTotal.textContent = formatPrice(finalTotal);
 }
 
 function addService(event) {
@@ -285,6 +310,28 @@ function generatePDF() {
     return sum + Number(row.sum.replace(/[^0-9.,]+/g, '').replace(',', '.'));
   }, 0);
 
+  let finalTotal = total;
+  let surcharges = [];
+
+  if (petSurchargeEnabled) {
+    const areaServices = services.filter(service =>
+      selectedQuantities[service.id] > 0 && service.unit === 'м²'
+    );
+    const areaTotal = areaServices.reduce((sum, service) => {
+      const qty = Number(selectedQuantities[service.id] || 0);
+      const price = Number(selectedPrices[service.id] || service.price);
+      return sum + Math.max(qty, 0) * price;
+    }, 0);
+    const petSurcharge = areaTotal * (petSurchargePercent / 100);
+    finalTotal += petSurcharge;
+    surcharges.push(`Націнка за домашню тварину (${petSurchargePercent}%): ${formatPrice(petSurcharge)}`);
+  }
+
+  if (ecoChemistryEnabled) {
+    finalTotal += ecoChemistryAmount;
+    surcharges.push(`Екологічна хімія: ${formatPrice(ecoChemistryAmount)}`);
+  }
+
   const html = `<!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -330,8 +377,13 @@ function generatePDF() {
     </tbody>
     <tfoot>
       <tr>
-        <td colspan="5">Загальна сума</td>
+        <td colspan="5">Загальна сума послуг</td>
         <td>${formatPrice(total)}</td>
+      </tr>
+      ${surcharges.map(surcharge => `<tr><td colspan="5">${surcharge.split(':')[0]}</td><td>${surcharge.split(':')[1]}</td></tr>`).join('')}
+      <tr>
+        <td colspan="5"><strong>Загальна сума з націнками</strong></td>
+        <td><strong>${formatPrice(finalTotal)}</strong></td>
       </tr>
     </tfoot>
   </table>
@@ -413,6 +465,26 @@ document.getElementById('serviceCategory').addEventListener('change', (event) =>
 document.getElementById('toggleCreateForm').addEventListener('click', () => {
   const panel = document.querySelector('.panel-collapsible');
   panel.classList.toggle('collapsed');
+});
+
+document.getElementById('petSurcharge').addEventListener('change', (e) => {
+  petSurchargeEnabled = e.target.checked;
+  updateTotal();
+});
+
+document.getElementById('petSurchargePercent').addEventListener('input', (e) => {
+  petSurchargePercent = Number(e.target.value) || 0;
+  updateTotal();
+});
+
+document.getElementById('ecoChemistry').addEventListener('change', (e) => {
+  ecoChemistryEnabled = e.target.checked;
+  updateTotal();
+});
+
+document.getElementById('ecoChemistryAmount').addEventListener('input', (e) => {
+  ecoChemistryAmount = Number(e.target.value) || 0;
+  updateTotal();
 });
 
 loadServices();
