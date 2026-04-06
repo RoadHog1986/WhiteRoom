@@ -710,4 +710,3 @@ if (categorySelect.value === 'drycleaning') {
   drycleaningLabel.style.display = 'none';
   extraLabel.style.display = 'none';
 }
-
