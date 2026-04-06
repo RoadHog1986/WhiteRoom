@@ -40,9 +40,7 @@
           Тип прибирання
           <select id="serviceCleaningType">
             <option value="підтримуюче прибирання">Підтримуюче прибирання</option>
-            <option value="Генеральне прибирання - Basic">Генеральне прибирання - Basic</option>
-            <option value="Генеральне прибирання - Standart">Генеральне прибирання - Standart</option>
-            <option value="Генеральне прибирання - Premium">Генеральне прибирання - Premium</option>
+            <option value="Генеральне прибирання">Генеральне прибирання</option>
           </select>
         </label>
         <label id="extraLabel" class="subcategory-label" style="display: none;">
@@ -60,6 +58,10 @@
         <label>
           Назва послуги
           <input id="serviceName" type="text" required placeholder="Прибирання кухні" />
+        </label>
+        <label>
+          Назва послуги румунською (тільки для PDF)
+          <input id="serviceNameRo" type="text" placeholder="Curățenie bucătărie" />
         </label>
         <div class="price-unit-row">
           <label>
@@ -103,6 +105,15 @@
           <span>Екологічна хімія</span>
           <input type="number" id="ecoChemistryAmount" min="0" step="0.01" value="70" placeholder="70" />
           <span>RON</span>
+        </label>
+      </div>
+      <div class="pdf-options">
+        <label>
+          Мова PDF
+          <select id="pdfLanguage">
+            <option value="uk">Українська</option>
+            <option value="ro">Română</option>
+          </select>
         </label>
       </div>
       <div class="total-card">
