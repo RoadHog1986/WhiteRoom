@@ -11,7 +11,39 @@ let petSurchargePercent = 10;
 let ecoChemistryAmount = 70;
 let petSurchargeEnabled = false;
 let ecoChemistryEnabled = false;
+let pdfLanguage = 'uk';
 let collapsedCategories = { cleaning: true, extra: true };
+
+const PDF_TRANSLATIONS = {
+  uk: {
+    title: 'Розрахунок клінінга',
+    date: 'Дата',
+    service: 'Послуга',
+    category: 'Категорія',
+    subcategory: 'Підкатегорія',
+    quantity: 'Кількість',
+    price: 'Ціна',
+    sum: 'Сума',
+    totalServices: 'Загальна сума послуг',
+    totalWithSurcharges: 'Загальна сума з націнками',
+    petSurcharge: 'Націнка за домашню тварину',
+    ecoChemistry: 'Екологічна хімія',
+  },
+  ro: {
+    title: 'Calcul curățenie',
+    date: 'Dată',
+    service: 'Serviciu',
+    category: 'Categorie',
+    subcategory: 'Subcategorie',
+    quantity: 'Cantitate',
+    price: 'Preț',
+    sum: 'Sumă',
+    totalServices: 'Sumă totală servicii',
+    totalWithSurcharges: 'Sumă totală cu adaosuri',
+    petSurcharge: 'Majorare pentru animal de companie',
+    ecoChemistry: 'Chimie ecologică',
+  },
+};
 
 const CATEGORY_LABELS = {
   cleaning: 'Прибирання',
@@ -20,9 +52,29 @@ const CATEGORY_LABELS = {
 
 const CATEGORY_ORDER = ['cleaning', 'extra'];
 
+const PDF_CATEGORY_LABELS = {
+  uk: CATEGORY_LABELS,
+  ro: {
+    cleaning: 'Curățenie',
+    extra: 'Servicii suplimentare',
+  },
+};
+
+const PDF_SUBCATEGORY_TRANSLATIONS = {
+  'підтримуюче прибирання': 'Curățenie de întreținere',
+  'Генеральне прибирання': 'Curățenie generală',
+  'кухня': 'Bucătărie',
+  'санвузол': 'Grup sanitar',
+  'вітальня': 'Living',
+  'спальня': 'Dormitor',
+  'балкон': 'Balcon',
+  'веранда': 'Verandă',
+  "подвір'я": 'Curte',
+};
+
 const defaultServices = [
   { id: crypto.randomUUID(), name: 'Базове прибирання', price: 350, unit: 'год.', category: 'cleaning', subcategory: 'підтримуюче прибирання' },
-  { id: crypto.randomUUID(), name: 'Глибоке прибирання', price: 650, unit: 'м²', category: 'cleaning', subcategory: 'Генеральне прибирання - Basic' },
+  { id: crypto.randomUUID(), name: 'Глибоке прибирання', price: 650, unit: 'м²', category: 'cleaning', subcategory: 'Генеральне прибирання' },
   { id: crypto.randomUUID(), name: 'Миття вікон', price: 120, unit: 'шт.', category: 'extra', subcategory: 'вітальня' },
 ];
 
@@ -204,6 +256,7 @@ function updateTotal() {
 function addService(event) {
   event.preventDefault();
   const name = document.getElementById('serviceName').value.trim();
+  const nameRo = document.getElementById('serviceNameRo').value.trim();
   const price = Number(document.getElementById('servicePrice').value);
   const unit = document.getElementById('serviceUnit').value;
   const category = document.getElementById('serviceCategory').value;
@@ -213,7 +266,7 @@ function addService(event) {
   }
 
   const subcategory = category === 'cleaning' ? document.getElementById('serviceCleaningType').value : document.getElementById('serviceRoom').value;
-  const service = { id: crypto.randomUUID(), name, price, unit, category, subcategory };
+  const service = { id: crypto.randomUUID(), name, nameRo, price, unit, category, subcategory };
   services.unshift(service);
   selectedQuantities[service.id] = 0;
   saveServices();
@@ -240,14 +293,14 @@ function handleServiceAction(event) {
 
   if (action === 'edit') {
     const newName = prompt('Назва послуги', service.name)?.trim();
+    const newNameRo = prompt('Назва послуги румунською (тільки для PDF)', service.nameRo || '')?.trim();
     const newPrice = Number(prompt('Ціна за одиницю (RON)', service.price));
     const newUnit = prompt('Одиниця виміру', service.unit)?.trim();
     const subcategoryLabel = service.category === 'cleaning' ? 'Тип прибирання' : 'Приміщення';
     const newSubcategory = prompt(subcategoryLabel, service.subcategory)?.trim();
     if (newName && !Number.isNaN(newPrice) && newPrice >= 0) {
       service.name = newName;
-      service.price = newPrice;
-      service.unit = newUnit || service.unit;
+      service.nameRo = newNameRo || service.nameRo;
       service.subcategory = newSubcategory || service.subcategory;
       saveServices();
       renderServices();
@@ -285,10 +338,25 @@ function handleToggleSelection(event) {
   renderOrderPanel();
 }
 
+function getTranslatedLabel(key) {
+  return PDF_TRANSLATIONS[pdfLanguage][key] || PDF_TRANSLATIONS.uk[key];
+}
+
+function translateCategory(category) {
+  return PDF_CATEGORY_LABELS[pdfLanguage][category] || category;
+}
+
+function translateSubcategory(subcategory) {
+  if (pdfLanguage === 'ro') {
+    return PDF_SUBCATEGORY_TRANSLATIONS[subcategory] || subcategory;
+  }
+  return subcategory;
+}
+
 function generatePDF() {
   const selectedServices = services.filter(service => selectedQuantities[service.id] > 0);
   if (!selectedServices.length) {
-    alert('Немає вибраних послуг для експорту.');
+    alert(pdfLanguage === 'ro' ? 'Nu există servicii selectate pentru export.' : 'Немає вибраних послуг для експорту.');
     return;
   }
 
@@ -297,12 +365,12 @@ function generatePDF() {
     const price = selectedPrices[service.id] || service.price;
     const sum = qty * price;
     return {
-      name: service.name,
+      name: pdfLanguage === 'ro' && service.nameRo ? service.nameRo : service.name,
       qty: `${qty} ${service.unit}`,
       price: formatPrice(price),
       sum: formatPrice(sum),
-      category: CATEGORY_LABELS[service.category] || 'Прибирання',
-      subcategory: service.subcategory,
+      category: translateCategory(service.category),
+      subcategory: translateSubcategory(service.subcategory),
     };
   });
 
@@ -324,19 +392,19 @@ function generatePDF() {
     }, 0);
     const petSurcharge = cleaningTotal * (petSurchargePercent / 100);
     finalTotal += petSurcharge;
-    surcharges.push(`Націнка за домашню тварину (${petSurchargePercent}%): ${formatPrice(petSurcharge)}`);
+    surcharges.push(`${getTranslatedLabel('petSurcharge')} (${petSurchargePercent}%): ${formatPrice(petSurcharge)}`);
   }
 
   if (ecoChemistryEnabled) {
     finalTotal += ecoChemistryAmount;
-    surcharges.push(`Екологічна хімія: ${formatPrice(ecoChemistryAmount)}`);
+    surcharges.push(`${getTranslatedLabel('ecoChemistry')}: ${formatPrice(ecoChemistryAmount)}`);
   }
 
   const html = `<!DOCTYPE html>
-<html lang="uk">
+<html lang="${pdfLanguage === 'ro' ? 'ro' : 'uk'}">
 <head>
   <meta charset="UTF-8" />
-  <title>Розрахунок клінінга</title>
+  <title>${getTranslatedLabel('title')}</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 24px; color: #17212b; }
     h1 { margin: 0 0 8px; font-size: 24px; }
@@ -350,17 +418,17 @@ function generatePDF() {
   </style>
 </head>
 <body>
-  <h1>Розрахунок клінінга</h1>
-  <div class="meta">Дата: ${new Date().toLocaleDateString('uk-UA')}</div>
+  <h1>${getTranslatedLabel('title')}</h1>
+  <div class="meta">${getTranslatedLabel('date')}: ${new Date().toLocaleDateString(pdfLanguage === 'ro' ? 'ro-RO' : 'uk-UA')}</div>
   <table>
     <thead>
       <tr>
-        <th>Послуга</th>
-        <th>Категорія</th>
-        <th>Підкатегорія</th>
-        <th>Кількість</th>
-        <th>Ціна</th>
-        <th>Сума</th>
+        <th>${getTranslatedLabel('service')}</th>
+        <th>${getTranslatedLabel('category')}</th>
+        <th>${getTranslatedLabel('subcategory')}</th>
+        <th>${getTranslatedLabel('quantity')}</th>
+        <th>${getTranslatedLabel('price')}</th>
+        <th>${getTranslatedLabel('sum')}</th>
       </tr>
     </thead>
     <tbody>
@@ -377,12 +445,12 @@ function generatePDF() {
     </tbody>
     <tfoot>
       <tr>
-        <td colspan="5">Загальна сума послуг</td>
+        <td colspan="5">${getTranslatedLabel('totalServices')}</td>
         <td>${formatPrice(total)}</td>
       </tr>
       ${surcharges.map(surcharge => `<tr><td colspan="5">${surcharge.split(':')[0]}</td><td>${surcharge.split(':')[1]}</td></tr>`).join('')}
       <tr>
-        <td colspan="5"><strong>Загальна сума з націнками</strong></td>
+        <td colspan="5"><strong>${getTranslatedLabel('totalWithSurcharges')}</strong></td>
         <td><strong>${formatPrice(finalTotal)}</strong></td>
       </tr>
     </tfoot>
@@ -397,7 +465,7 @@ function generatePDF() {
 
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
-    alert('Не вдалося відкрити вікно для друку. Перевірте, чи браузер блокує спливаючі вікна.');
+    alert(pdfLanguage === 'ro' ? 'Nu s-a putut deschide fereastra de imprimare. Verificați dacă browserul blochează ferestrele pop-up.' : 'Не вдалося відкрити вікно для друку. Перевірте, чи браузер блокує спливаючі вікна.');
     return;
   }
   printWindow.document.write(html);
@@ -485,6 +553,10 @@ document.getElementById('ecoChemistry').addEventListener('change', (e) => {
 document.getElementById('ecoChemistryAmount').addEventListener('input', (e) => {
   ecoChemistryAmount = Number(e.target.value) || 0;
   updateTotal();
+});
+
+document.getElementById('pdfLanguage').addEventListener('change', (e) => {
+  pdfLanguage = e.target.value;
 });
 
 loadServices();

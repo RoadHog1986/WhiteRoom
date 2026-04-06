@@ -324,6 +324,25 @@ small {
   font-size: 0.9rem;
 }
 
+.pdf-options {
+  margin-top: 16px;
+}
+
+.pdf-options label {
+  display: grid;
+  gap: 8px;
+  font-size: 0.95rem;
+}
+
+.pdf-options select {
+  width: 100%;
+  max-width: 220px;
+  border: 1px solid #d3dce7;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #f8fbff;
+}
+
 @media (max-width: 520px) {
   .surcharge-item {
     grid-template-columns: auto 1fr;
