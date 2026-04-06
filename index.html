@@ -7,12 +7,13 @@
   <link rel="stylesheet" href="styles.css" />
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#2d7aaf" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
   <main class="app-shell">
     <header class="app-header">
       <div>
-        <p class="eyebrow">Смартфон-френдлі PWA</p>
+        <p class="eyebrow">WhiteRoom Home Services SRL</p>
         <h1>Калькулятор клінінга</h1>
         <p>Менеджер може додавати послуги, змінювати ціни та отримувати підсумок.</p>
       </div>
@@ -22,14 +23,6 @@
     <section class="panel">
       <h2>Менеджер: створити послугу</h2>
       <form id="serviceForm" class="service-form">
-        <label>
-          Назва послуги
-          <input id="serviceName" type="text" required placeholder="Прибирання кухні" />
-        </label>
-        <label>
-          Ціна за одиницю (₴)
-          <input id="servicePrice" type="number" min="0" step="0.01" required placeholder="250" />
-        </label>
         <label>
           Категорія послуги
           <select id="serviceCategory">
@@ -59,13 +52,23 @@
           </select>
         </label>
         <label>
-          Одиниця виміру
-          <select id="serviceUnit">
-            <option value="метр квадратний">Метр квадратний</option>
-            <option value="година">Година</option>
-            <option value="штука (шт)">Штука (шт)</option>
-          </select>
+          Назва послуги
+          <input id="serviceName" type="text" required placeholder="Прибирання кухні" />
         </label>
+        <div class="price-unit-row">
+          <label>
+            Ціна за одиницю (RON)
+            <input id="servicePrice" type="number" min="0" step="0.01" required placeholder="250" />
+          </label>
+          <label>
+            Одиниця виміру
+            <select id="serviceUnit">
+              <option value="м²">м²</option>
+              <option value="год.">год.</option>
+              <option value="шт.">шт.</option>
+            </select>
+          </label>
+        </div>
         <button type="submit" class="primary">Додати послугу</button>
       </form>
     </section>
@@ -86,7 +89,10 @@
           <p>Загальна сума</p>
           <strong id="orderTotal">RON 0.00</strong>
         </div>
-        <button id="clearSelection" class="secondary">Очистити вибір</button>
+        <div class="action-buttons">
+          <button id="generatePdf" class="secondary">Генерувати PDF</button>
+          <button id="clearSelection" class="secondary">Очистити вибір</button>
+        </div>
       </div>
     </section>
   </main>

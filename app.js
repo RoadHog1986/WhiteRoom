@@ -7,6 +7,7 @@ let services = [];
 let selectedQuantities = {};
 let selectedPrices = {};
 let searchQuery = '';
+let collapsedCategories = { cleaning: true, extra: true };
 
 const CATEGORY_LABELS = {
   cleaning: 'Прибирання',
@@ -16,9 +17,9 @@ const CATEGORY_LABELS = {
 const CATEGORY_ORDER = ['cleaning', 'extra'];
 
 const defaultServices = [
-  { id: crypto.randomUUID(), name: 'Базове прибирання', price: 350, unit: 'година', category: 'cleaning', subcategory: 'підтримуюче прибирання' },
-  { id: crypto.randomUUID(), name: 'Глибоке прибирання', price: 650, unit: 'метр квадратний', category: 'cleaning', subcategory: 'Генеральне прибирання - Basic' },
-  { id: crypto.randomUUID(), name: 'Миття вікон', price: 120, unit: 'штука (шт)', category: 'extra', subcategory: 'вітальня' },
+  { id: crypto.randomUUID(), name: 'Базове прибирання', price: 350, unit: 'год.', category: 'cleaning', subcategory: 'підтримуюче прибирання' },
+  { id: crypto.randomUUID(), name: 'Глибоке прибирання', price: 650, unit: 'м²', category: 'cleaning', subcategory: 'Генеральне прибирання - Basic' },
+  { id: crypto.randomUUID(), name: 'Миття вікон', price: 120, unit: 'шт.', category: 'extra', subcategory: 'вітальня' },
 ];
 
 function loadServices() {
@@ -82,7 +83,24 @@ function renderServices() {
 
     const groupSection = document.createElement('div');
     groupSection.className = 'service-group';
-    groupSection.innerHTML = `<h3 class="service-group-title">${CATEGORY_LABELS[category]}</h3>`;
+    
+    const titleButton = document.createElement('button');
+    titleButton.className = 'service-group-title';
+    titleButton.type = 'button';
+    titleButton.dataset.category = category;
+    titleButton.innerHTML = `<span>${CATEGORY_LABELS[category]}</span><span class="accordion-icon">▼</span>`;
+    titleButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      collapsedCategories[category] = !collapsedCategories[category];
+      renderServices();
+    });
+    groupSection.append(titleButton);
+
+    const groupContent = document.createElement('div');
+    groupContent.className = 'service-group-content';
+    if (collapsedCategories[category]) {
+      groupContent.classList.add('collapsed');
+    }
 
     group.forEach((service) => {
       const selected = selectedQuantities[service.id] > 0;
@@ -102,8 +120,10 @@ function renderServices() {
           <button class="small-button" data-action="remove" data-id="${service.id}">Видалити</button>
         </div>
       `;
-      groupSection.append(card);
+      groupContent.append(card);
     });
+
+    groupSection.append(groupContent);
 
     servicesList.append(groupSection);
   });
@@ -240,9 +260,104 @@ function handleToggleSelection(event) {
   renderOrderPanel();
 }
 
+function generatePDF() {
+  const selectedServices = services.filter(service => selectedQuantities[service.id] > 0);
+  if (!selectedServices.length) {
+    alert('Немає вибраних послуг для експорту.');
+    return;
+  }
+
+  const rows = selectedServices.map(service => {
+    const qty = selectedQuantities[service.id] || 0;
+    const price = selectedPrices[service.id] || service.price;
+    const sum = qty * price;
+    return {
+      name: service.name,
+      qty: `${qty} ${service.unit}`,
+      price: formatPrice(price),
+      sum: formatPrice(sum),
+      category: CATEGORY_LABELS[service.category] || 'Прибирання',
+      subcategory: service.subcategory,
+    };
+  });
+
+  const total = rows.reduce((sum, row) => {
+    return sum + Number(row.sum.replace(/[^0-9.,]+/g, '').replace(',', '.'));
+  }, 0);
+
+  const html = `<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <title>Розрахунок клінінга</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 24px; color: #17212b; }
+    h1 { margin: 0 0 8px; font-size: 24px; }
+    .meta { margin-bottom: 24px; color: #44515f; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { border: 1px solid #cbd7e6; padding: 10px 12px; }
+    th { background: #f2f8ff; text-align: left; }
+    tbody tr:nth-child(even) { background: #fafcff; }
+    tfoot td { border-top: 2px solid #1d5c8d; font-weight: bold; }
+    .small { color: #556d85; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+  <h1>Розрахунок клінінга</h1>
+  <div class="meta">Дата: ${new Date().toLocaleDateString('uk-UA')}</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Послуга</th>
+        <th>Категорія</th>
+        <th>Підкатегорія</th>
+        <th>Кількість</th>
+        <th>Ціна</th>
+        <th>Сума</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rows.map(row => `
+        <tr>
+          <td>${row.name}</td>
+          <td>${row.category}</td>
+          <td>${row.subcategory}</td>
+          <td>${row.qty}</td>
+          <td>${row.price}</td>
+          <td>${row.sum}</td>
+        </tr>
+      `).join('')}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="5">Загальна сума</td>
+        <td>${formatPrice(total)}</td>
+      </tr>
+    </tfoot>
+  </table>
+  <script>
+    window.onload = function() {
+      window.print();
+    };
+  </script>
+</body>
+</html>`;
+
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    alert('Не вдалося відкрити вікно для друку. Перевірте, чи браузер блокує спливаючі вікна.');
+    return;
+  }
+  printWindow.document.write(html);
+  printWindow.document.close();
+}
+
 function clearSelections() {
   Object.keys(selectedQuantities).forEach((id) => {
     selectedQuantities[id] = 0;
+  });
+  Object.keys(selectedPrices).forEach((id) => {
+    delete selectedPrices[id];
   });
   renderOrderPanel();
 }
@@ -275,6 +390,7 @@ servicesList.addEventListener('click', handleServiceAction);
 orderPanel.addEventListener('input', handleOrderInput);
 orderPanel.addEventListener('click', handleToggleSelection);
 clearSelection.addEventListener('click', clearSelections);
+document.getElementById('generatePdf').addEventListener('click', generatePDF);
 
 serviceSearch.addEventListener('input', (event) => {
   searchQuery = event.target.value;
