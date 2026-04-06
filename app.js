@@ -457,11 +457,12 @@ function generatePDF() {
     return;
   }
 
-  const rows = selectedServices.map(service => {
+  const rows = selectedServices.map((service, index) => {
     const qty = selectedQuantities[service.id] || 0;
     const price = selectedPrices[service.id] || (service.isRange ? service.minPrice : service.price);
     const sum = qty * price;
     return {
+      number: index + 1,
       name: pdfLanguage === 'ro' && service.nameRo ? service.nameRo : service.name,
       qty: `${qty} ${translateUnit(service.unit, pdfLanguage)}`,
       price: formatPrice(price),
@@ -470,6 +471,10 @@ function generatePDF() {
       subcategory: translateSubcategory(service.subcategory, pdfLanguage),
     };
   });
+
+  const baseUrl = window.location.href;
+  const logoUrl = new URL('icons/icon.svg', baseUrl).href;
+  const pdfBaseTag = `<base href="${baseUrl}">`;
 
   const total = rows.reduce((sum, row) => {
     return sum + Number(row.sum.replace(/[^0-9.,]+/g, '').replace(',', '.'));
@@ -502,24 +507,28 @@ function generatePDF() {
 <head>
   <meta charset="UTF-8" />
   <title>${getTranslatedLabel('title', pdfLanguage)}</title>
+  ${pdfBaseTag}
   <style>
-    body { font-family: Arial, sans-serif; padding: 24px; color: #17212b; }
-    h1 { margin: 0 0 8px; font-size: 24px; }
-    .meta { margin-bottom: 24px; color: #44515f; }
-    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-    th, td { border: 1px solid #cbd7e6; padding: 10px 12px; }
+    body { font-family: Arial, sans-serif; padding: 24px; color: #17212b; position: relative; font-size: 12px; line-height: 1.4; }
+    h1 { margin: 0 0 8px; font-size: 18px; }
+    .meta { margin-bottom: 24px; color: #44515f; font-size: 11px; }
+    .logo { position: absolute; top: 24px; right: 24px; width: 120px; height: auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 72px; }
+    th, td { border: 1px solid #cbd7e6; padding: 10px 12px; font-size: 11px; }
     th { background: #f2f8ff; text-align: left; }
     tbody tr:nth-child(even) { background: #fafcff; }
     tfoot td { border-top: 2px solid #1d5c8d; font-weight: bold; }
-    .small { color: #556d85; font-size: 0.95rem; }
+    .small { color: #556d85; font-size: 0.75rem; }
   </style>
 </head>
 <body>
+  <img class="logo" src="${logoUrl}" alt="WhiteRoom Home Services" />
   <h1>${getTranslatedLabel('title', pdfLanguage)}</h1>
   <div class="meta">${getTranslatedLabel('date', pdfLanguage)}: ${new Date().toLocaleDateString(pdfLanguage === 'ro' ? 'ro-RO' : 'uk-UA')}</div>
   <table>
     <thead>
       <tr>
+        <th>#</th>
         <th>${getTranslatedLabel('service', pdfLanguage)}</th>
         <th>${getTranslatedLabel('category', pdfLanguage)}</th>
         <th>${getTranslatedLabel('subcategory', pdfLanguage)}</th>
@@ -531,6 +540,7 @@ function generatePDF() {
     <tbody>
       ${rows.map(row => `
         <tr>
+          <td>${row.number}</td>
           <td>${row.name}</td>
           <td>${row.category}</td>
           <td>${row.subcategory}</td>
@@ -542,12 +552,12 @@ function generatePDF() {
     </tbody>
     <tfoot>
       <tr>
-        <td colspan="5">${getTranslatedLabel('totalServices', pdfLanguage)}</td>
+        <td colspan="6">${getTranslatedLabel('totalServices', pdfLanguage)}</td>
         <td>${formatPrice(total)}</td>
       </tr>
-      ${surcharges.map(surcharge => `<tr><td colspan="5">${surcharge.split(':')[0]}</td><td>${surcharge.split(':')[1]}</td></tr>`).join('')}
+      ${surcharges.map(surcharge => `<tr><td colspan="6">${surcharge.split(':')[0]}</td><td>${surcharge.split(':')[1]}</td></tr>`).join('')}
       <tr>
-        <td colspan="5"><strong>${getTranslatedLabel('totalWithSurcharges', pdfLanguage)}</strong></td>
+        <td colspan="6"><strong>${getTranslatedLabel('totalWithSurcharges', pdfLanguage)}</strong></td>
         <td><strong>${formatPrice(finalTotal)}</strong></td>
       </tr>
     </tfoot>
@@ -700,3 +710,4 @@ if (categorySelect.value === 'drycleaning') {
   drycleaningLabel.style.display = 'none';
   extraLabel.style.display = 'none';
 }
+
