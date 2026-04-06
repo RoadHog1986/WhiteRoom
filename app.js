@@ -410,6 +410,11 @@ document.getElementById('serviceCategory').addEventListener('change', (event) =>
   }
 });
 
+document.getElementById('toggleCreateForm').addEventListener('click', () => {
+  const panel = document.querySelector('.panel-collapsible');
+  panel.classList.toggle('collapsed');
+});
+
 loadServices();
 renderServices();
 renderOrderPanel();
