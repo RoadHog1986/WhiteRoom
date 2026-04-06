@@ -289,6 +289,20 @@ small {
   min-width: 120px;
 }
 
+.price-range {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.price-range input[type="range"] {
+  flex: 1;
+}
+
+.price-range input[type="number"] {
+  width: 80px;
+}
+
 .surcharges {
   display: grid;
   gap: 12px;

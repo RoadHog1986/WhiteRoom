@@ -33,14 +33,18 @@
             Категорія послуги
           <select id="serviceCategory">
             <option value="cleaning">Прибирання</option>
+            <option value="drycleaning">Хімчистка</option>
             <option value="extra">Додаткові послуги</option>
           </select>
         </label>
-        <label id="cleaningLabel" class="subcategory-label">
-          Тип прибирання
-          <select id="serviceCleaningType">
-            <option value="підтримуюче прибирання">Підтримуюче прибирання</option>
-            <option value="Генеральне прибирання">Генеральне прибирання</option>
+        <label id="drycleaningLabel" class="subcategory-label" style="display: none;">
+          Тип хімчистки
+          <select id="serviceDrycleaningType">
+            <option value="Дивани">Дивани</option>
+            <option value="Стільці та крісла">Стільці та крісла</option>
+            <option value="Каркаси ліжка та узголів'я">Каркаси ліжка та узголів'я</option>
+            <option value="Матраци">Матраци</option>
+            <option value="Інше">Інше</option>
           </select>
         </label>
         <label id="extraLabel" class="subcategory-label" style="display: none;">
@@ -63,15 +67,28 @@
           Назва послуги румунською (тільки для PDF)
           <input id="serviceNameRo" type="text" placeholder="Curățenie bucătărie" />
         </label>
+        <label>
+          <input type="checkbox" id="servicePriceRange" />
+          Ціна в діапазоні
+        </label>
         <div class="price-unit-row">
-          <label>
+          <label id="singlePriceLabel">
             Ціна за одиницю (RON)
             <input id="servicePrice" type="number" min="0" step="0.01" required placeholder="250" />
+          </label>
+          <label id="minPriceLabel" style="display: none;">
+            Мінімальна ціна (RON)
+            <input id="serviceMinPrice" type="number" min="0" step="0.01" placeholder="200" />
+          </label>
+          <label id="maxPriceLabel" style="display: none;">
+            Максимальна ціна (RON)
+            <input id="serviceMaxPrice" type="number" min="0" step="0.01" placeholder="300" />
           </label>
           <label>
             Одиниця виміру
             <select id="serviceUnit">
               <option value="м²">м²</option>
+              <option value="м.п.">м.п.</option>
               <option value="год.">год.</option>
               <option value="шт.">шт.</option>
             </select>

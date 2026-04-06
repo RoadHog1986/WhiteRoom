@@ -11,8 +11,7 @@ let petSurchargePercent = 10;
 let ecoChemistryAmount = 70;
 let petSurchargeEnabled = false;
 let ecoChemistryEnabled = false;
-let pdfLanguage = 'uk';
-let collapsedCategories = { cleaning: true, extra: true };
+let collapsedCategories = { cleaning: true, drycleaning: false, extra: true };
 
 const PDF_TRANSLATIONS = {
   uk: {
@@ -47,15 +46,17 @@ const PDF_TRANSLATIONS = {
 
 const CATEGORY_LABELS = {
   cleaning: 'Прибирання',
+  drycleaning: 'Хімчистка',
   extra: 'Додаткові послуги',
 };
 
-const CATEGORY_ORDER = ['cleaning', 'extra'];
+const CATEGORY_ORDER = ['cleaning', 'drycleaning', 'extra'];
 
 const PDF_CATEGORY_LABELS = {
   uk: CATEGORY_LABELS,
   ro: {
     cleaning: 'Curățenie',
+    drycleaning: 'Curățare chimică',
     extra: 'Servicii suplimentare',
   },
 };
@@ -63,6 +64,11 @@ const PDF_CATEGORY_LABELS = {
 const PDF_SUBCATEGORY_TRANSLATIONS = {
   'підтримуюче прибирання': 'Curățenie de întreținere',
   'Генеральне прибирання': 'Curățenie generală',
+  'Дивани': 'Canapele',
+  'Стільці та крісла': 'Scaune și fotolii',
+  'Каркаси ліжка та узголів\'я': 'Cadre pat și căpătâi',
+  'Матраци': 'Saltele',
+  'Інше': 'Altele',
   'кухня': 'Bucătărie',
   'санвузол': 'Grup sanitar',
   'вітальня': 'Living',
@@ -72,10 +78,27 @@ const PDF_SUBCATEGORY_TRANSLATIONS = {
   "подвір'я": 'Curte',
 };
 
+const UNIT_TRANSLATIONS = {
+  uk: {
+    'м²': 'м²',
+    'м.п.': 'м.п.',
+    'год.': 'год.',
+    'шт.': 'шт.',
+  },
+  ro: {
+    'м²': 'mp',
+    'м.п.': 'ml',
+    'год.': 'ore',
+    'шт.': 'buc.',
+  },
+};
+
 const defaultServices = [
-  { id: crypto.randomUUID(), name: 'Базове прибирання', price: 350, unit: 'год.', category: 'cleaning', subcategory: 'підтримуюче прибирання' },
-  { id: crypto.randomUUID(), name: 'Глибоке прибирання', price: 650, unit: 'м²', category: 'cleaning', subcategory: 'Генеральне прибирання' },
-  { id: crypto.randomUUID(), name: 'Миття вікон', price: 120, unit: 'шт.', category: 'extra', subcategory: 'вітальня' },
+  { id: crypto.randomUUID(), name: 'Базове прибирання', price: 350, unit: 'год.', category: 'cleaning', subcategory: '', isRange: false, minPrice: 350, maxPrice: 350 },
+  { id: crypto.randomUUID(), name: 'Глибоке прибирання', price: 650, unit: 'м²', category: 'cleaning', subcategory: '', isRange: false, minPrice: 650, maxPrice: 650 },
+  { id: crypto.randomUUID(), name: 'Хімчистка дивана', price: 200, unit: 'шт.', category: 'drycleaning', subcategory: 'Дивани', isRange: false, minPrice: 200, maxPrice: 200 },
+  { id: crypto.randomUUID(), name: 'Миття вікон', price: 120, unit: 'шт.', category: 'extra', subcategory: 'вітальня', isRange: false, minPrice: 120, maxPrice: 120 },
+  { id: crypto.randomUUID(), name: 'Миття карнизів', price: 50, unit: 'м.п.', category: 'extra', subcategory: 'вітальня', isRange: false, minPrice: 50, maxPrice: 50 },
 ];
 
 function loadServices() {
@@ -90,7 +113,22 @@ function loadServices() {
       service.category = 'cleaning';
     }
     if (!service.subcategory) {
-      service.subcategory = service.category === 'cleaning' ? 'підтримуюче прибирання' : 'кухня';
+      if (service.category === 'cleaning') {
+        service.subcategory = '';
+      } else if (service.category === 'drycleaning') {
+        service.subcategory = 'Дивани';
+      } else {
+        service.subcategory = 'кухня';
+      }
+    }
+    if (service.isRange === undefined) {
+      service.isRange = false;
+    }
+    if (service.minPrice === undefined) {
+      service.minPrice = service.price || 0;
+    }
+    if (service.maxPrice === undefined) {
+      service.maxPrice = service.price || 0;
     }
     if (!(service.id in selectedQuantities)) {
       selectedQuantities[service.id] = 0;
@@ -166,8 +204,8 @@ function renderServices() {
         <div>
           <h4>${service.name}</h4>
           <div class="service-meta">
-            <span>${formatPrice(service.price)} за ${service.unit || 'одиницю'}</span>
-            <span>${service.category === 'cleaning' ? 'Тип прибирання' : 'Приміщення'}: ${service.subcategory}</span>
+            <span>${service.isRange ? formatPrice(service.minPrice) + ' - ' + formatPrice(service.maxPrice) : formatPrice(service.minPrice)} за ${service.unit || 'одиницю'}</span>
+            <span>${service.category === 'cleaning' ? '' : (service.category === 'drycleaning' ? 'Тип хімчистки' : 'Приміщення') + ': ' + service.subcategory}</span>
           </div>
         </div>
         <div class="service-actions">
@@ -195,15 +233,24 @@ function renderOrderPanel() {
   }
 
   selectedServices.forEach((service) => {
+    const currentPrice = selectedPrices[service.id] || service.minPrice;
     const card = document.createElement('article');
     card.className = 'order-card';
+    const priceInputHtml = service.isRange ? `
+      <div class="price-range">
+        <input type="range" min="${service.minPrice}" max="${service.maxPrice}" value="${currentPrice}" step="0.01" data-id="${service.id}" class="order-price-range" />
+        <input type="number" min="0" step="0.01" value="${currentPrice}" data-id="${service.id}" class="order-price" />
+      </div>
+    ` : `
+      <input type="number" min="0" step="0.01" value="${currentPrice}" data-id="${service.id}" class="order-price" />
+    `;
     card.innerHTML = `
       <div>
         <h3>${service.name}</h3>
         <div class="order-meta">
-          <span>${formatPrice(service.price)} за ${service.unit || 'одиницю'}</span>
+          <span>${service.isRange ? formatPrice(service.minPrice) + ' - ' + formatPrice(service.maxPrice) : formatPrice(service.minPrice)} за ${service.unit || 'одиницю'}</span>
           <span>Категорія: ${CATEGORY_LABELS[service.category] || 'Прибирання'}</span>
-          <span>${service.category === 'cleaning' ? 'Тип прибирання' : 'Приміщення'}: ${service.subcategory}</span>
+          <span>${service.category === 'cleaning' ? '' : (service.category === 'drycleaning' ? 'Тип хімчистки' : 'Приміщення') + ': ' + service.subcategory}</span>
         </div>
       </div>
       <div class="order-actions">
@@ -213,7 +260,7 @@ function renderOrderPanel() {
         </label>
         <label>
           Ціна за одиницю (RON)
-          <input type="number" min="0" step="0.01" value="${selectedPrices[service.id] || service.price}" data-id="${service.id}" class="order-price" />
+          ${priceInputHtml}
         </label>
         <button class="small-button" data-action="toggle" data-id="${service.id}">Видалити з розрахунку</button>
       </div>
@@ -226,7 +273,7 @@ function renderOrderPanel() {
 function updateTotal() {
   const total = services.reduce((sum, service) => {
     const qty = Number(selectedQuantities[service.id] || 0);
-    const price = Number(selectedPrices[service.id] || service.price);
+    const price = Number(selectedPrices[service.id] || (service.isRange ? service.minPrice : service.price));
     return sum + Math.max(qty, 0) * price;
   }, 0);
 
@@ -239,7 +286,7 @@ function updateTotal() {
     );
     const cleaningTotal = cleaningServices.reduce((sum, service) => {
       const qty = Number(selectedQuantities[service.id] || 0);
-      const price = Number(selectedPrices[service.id] || service.price);
+      const price = Number(selectedPrices[service.id] || (service.isRange ? service.minPrice : service.price));
       return sum + Math.max(qty, 0) * price;
     }, 0);
     finalTotal += cleaningTotal * (petSurchargePercent / 100);
@@ -257,16 +304,37 @@ function addService(event) {
   event.preventDefault();
   const name = document.getElementById('serviceName').value.trim();
   const nameRo = document.getElementById('serviceNameRo').value.trim();
-  const price = Number(document.getElementById('servicePrice').value);
   const unit = document.getElementById('serviceUnit').value;
   const category = document.getElementById('serviceCategory').value;
+  const isRange = document.getElementById('servicePriceRange').checked;
 
-  if (!name || Number.isNaN(price) || price < 0) {
+  if (!name) {
     return;
   }
 
-  const subcategory = category === 'cleaning' ? document.getElementById('serviceCleaningType').value : document.getElementById('serviceRoom').value;
-  const service = { id: crypto.randomUUID(), name, nameRo, price, unit, category, subcategory };
+  let minPrice, maxPrice;
+  if (isRange) {
+    minPrice = Number(document.getElementById('serviceMinPrice').value) || 0;
+    maxPrice = Number(document.getElementById('serviceMaxPrice').value) || 0;
+    if (minPrice > maxPrice) {
+      alert('Мінімальна ціна не може бути більше максимальної.');
+      return;
+    }
+  } else {
+    const price = Number(document.getElementById('servicePrice').value);
+    if (Number.isNaN(price) || price < 0) {
+      return;
+    }
+    minPrice = maxPrice = price;
+  }
+
+  let subcategory = '';
+  if (category === 'drycleaning') {
+    subcategory = document.getElementById('serviceDrycleaningType').value;
+  } else if (category === 'extra') {
+    subcategory = document.getElementById('serviceRoom').value;
+  }
+  const service = { id: crypto.randomUUID(), name, nameRo, unit, category, subcategory, isRange, minPrice, maxPrice };
   services.unshift(service);
   selectedQuantities[service.id] = 0;
   saveServices();
@@ -296,8 +364,13 @@ function handleServiceAction(event) {
     const newNameRo = prompt('Назва послуги румунською (тільки для PDF)', service.nameRo || '')?.trim();
     const newPrice = Number(prompt('Ціна за одиницю (RON)', service.price));
     const newUnit = prompt('Одиниця виміру', service.unit)?.trim();
-    const subcategoryLabel = service.category === 'cleaning' ? 'Тип прибирання' : 'Приміщення';
-    const newSubcategory = prompt(subcategoryLabel, service.subcategory)?.trim();
+    let subcategoryLabel = '';
+    if (service.category === 'drycleaning') {
+      subcategoryLabel = 'Тип хімчистки';
+    } else if (service.category === 'extra') {
+      subcategoryLabel = 'Приміщення';
+    }
+    const newSubcategory = subcategoryLabel ? prompt(subcategoryLabel, service.subcategory)?.trim() : '';
     if (newName && !Number.isNaN(newPrice) && newPrice >= 0) {
       service.name = newName;
       service.nameRo = newNameRo || service.nameRo;
@@ -317,14 +390,25 @@ function handleServiceAction(event) {
 
 function handleOrderInput(event) {
   const input = event.target;
-  if (input.tagName !== 'INPUT' || input.type !== 'number') return;
+  if (input.tagName !== 'INPUT' || (input.type !== 'number' && input.type !== 'range')) return;
   const id = input.dataset.id;
   const value = Number(input.value);
   
   if (input.classList.contains('order-quantity')) {
     selectedQuantities[id] = Number.isNaN(value) ? 0 : Math.max(0, value);
-  } else if (input.classList.contains('order-price')) {
+  } else if (input.classList.contains('order-price') || input.classList.contains('order-price-range')) {
     selectedPrices[id] = Number.isNaN(value) ? 0 : Math.max(0, value);
+    // Синхронізувати slider і input
+    const card = input.closest('.order-card');
+    const rangeInput = card.querySelector('.order-price-range');
+    const numberInput = card.querySelector('.order-price');
+    if (input === rangeInput) {
+      numberInput.value = value;
+    } else if (input === numberInput) {
+      if (rangeInput) {
+        rangeInput.value = value;
+      }
+    }
   }
   updateTotal();
 }
@@ -338,22 +422,30 @@ function handleToggleSelection(event) {
   renderOrderPanel();
 }
 
-function getTranslatedLabel(key) {
-  return PDF_TRANSLATIONS[pdfLanguage][key] || PDF_TRANSLATIONS.uk[key];
+function getTranslatedLabel(key, language = 'uk') {
+  return PDF_TRANSLATIONS[language][key] || PDF_TRANSLATIONS.uk[key];
 }
 
-function translateCategory(category) {
-  return PDF_CATEGORY_LABELS[pdfLanguage][category] || category;
+function translateCategory(category, language = 'uk') {
+  return PDF_CATEGORY_LABELS[language][category] || category;
 }
 
-function translateSubcategory(subcategory) {
-  if (pdfLanguage === 'ro') {
+function translateSubcategory(subcategory, language = 'uk') {
+  if (language === 'ro') {
     return PDF_SUBCATEGORY_TRANSLATIONS[subcategory] || subcategory;
   }
   return subcategory;
 }
 
+function translateUnit(unit, language = 'uk') {
+  if (language === 'ro') {
+    return UNIT_TRANSLATIONS.ro[unit] || unit;
+  }
+  return unit;
+}
+
 function generatePDF() {
+  const pdfLanguage = document.getElementById('pdfLanguage').value;
   const selectedServices = services.filter(service => selectedQuantities[service.id] > 0);
   if (!selectedServices.length) {
     alert(pdfLanguage === 'ro' ? 'Nu există servicii selectate pentru export.' : 'Немає вибраних послуг для експорту.');
@@ -362,15 +454,15 @@ function generatePDF() {
 
   const rows = selectedServices.map(service => {
     const qty = selectedQuantities[service.id] || 0;
-    const price = selectedPrices[service.id] || service.price;
+    const price = selectedPrices[service.id] || (service.isRange ? service.minPrice : service.price);
     const sum = qty * price;
     return {
       name: pdfLanguage === 'ro' && service.nameRo ? service.nameRo : service.name,
-      qty: `${qty} ${service.unit}`,
+      qty: `${qty} ${translateUnit(service.unit, pdfLanguage)}`,
       price: formatPrice(price),
       sum: formatPrice(sum),
-      category: translateCategory(service.category),
-      subcategory: translateSubcategory(service.subcategory),
+      category: translateCategory(service.category, pdfLanguage),
+      subcategory: translateSubcategory(service.subcategory, pdfLanguage),
     };
   });
 
@@ -392,19 +484,19 @@ function generatePDF() {
     }, 0);
     const petSurcharge = cleaningTotal * (petSurchargePercent / 100);
     finalTotal += petSurcharge;
-    surcharges.push(`${getTranslatedLabel('petSurcharge')} (${petSurchargePercent}%): ${formatPrice(petSurcharge)}`);
+    surcharges.push(`${getTranslatedLabel('petSurcharge', pdfLanguage)} (${petSurchargePercent}%): ${formatPrice(petSurcharge)}`);
   }
 
   if (ecoChemistryEnabled) {
     finalTotal += ecoChemistryAmount;
-    surcharges.push(`${getTranslatedLabel('ecoChemistry')}: ${formatPrice(ecoChemistryAmount)}`);
+    surcharges.push(`${getTranslatedLabel('ecoChemistry', pdfLanguage)}: ${formatPrice(ecoChemistryAmount)}`);
   }
 
   const html = `<!DOCTYPE html>
 <html lang="${pdfLanguage === 'ro' ? 'ro' : 'uk'}">
 <head>
   <meta charset="UTF-8" />
-  <title>${getTranslatedLabel('title')}</title>
+  <title>${getTranslatedLabel('title', pdfLanguage)}</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 24px; color: #17212b; }
     h1 { margin: 0 0 8px; font-size: 24px; }
@@ -418,17 +510,17 @@ function generatePDF() {
   </style>
 </head>
 <body>
-  <h1>${getTranslatedLabel('title')}</h1>
-  <div class="meta">${getTranslatedLabel('date')}: ${new Date().toLocaleDateString(pdfLanguage === 'ro' ? 'ro-RO' : 'uk-UA')}</div>
+  <h1>${getTranslatedLabel('title', pdfLanguage)}</h1>
+  <div class="meta">${getTranslatedLabel('date', pdfLanguage)}: ${new Date().toLocaleDateString(pdfLanguage === 'ro' ? 'ro-RO' : 'uk-UA')}</div>
   <table>
     <thead>
       <tr>
-        <th>${getTranslatedLabel('service')}</th>
-        <th>${getTranslatedLabel('category')}</th>
-        <th>${getTranslatedLabel('subcategory')}</th>
-        <th>${getTranslatedLabel('quantity')}</th>
-        <th>${getTranslatedLabel('price')}</th>
-        <th>${getTranslatedLabel('sum')}</th>
+        <th>${getTranslatedLabel('service', pdfLanguage)}</th>
+        <th>${getTranslatedLabel('category', pdfLanguage)}</th>
+        <th>${getTranslatedLabel('subcategory', pdfLanguage)}</th>
+        <th>${getTranslatedLabel('quantity', pdfLanguage)}</th>
+        <th>${getTranslatedLabel('price', pdfLanguage)}</th>
+        <th>${getTranslatedLabel('sum', pdfLanguage)}</th>
       </tr>
     </thead>
     <tbody>
@@ -445,12 +537,12 @@ function generatePDF() {
     </tbody>
     <tfoot>
       <tr>
-        <td colspan="5">${getTranslatedLabel('totalServices')}</td>
+        <td colspan="5">${getTranslatedLabel('totalServices', pdfLanguage)}</td>
         <td>${formatPrice(total)}</td>
       </tr>
       ${surcharges.map(surcharge => `<tr><td colspan="5">${surcharge.split(':')[0]}</td><td>${surcharge.split(':')[1]}</td></tr>`).join('')}
       <tr>
-        <td colspan="5"><strong>${getTranslatedLabel('totalWithSurcharges')}</strong></td>
+        <td colspan="5"><strong>${getTranslatedLabel('totalWithSurcharges', pdfLanguage)}</strong></td>
         <td><strong>${formatPrice(finalTotal)}</strong></td>
       </tr>
     </tfoot>
@@ -519,14 +611,17 @@ serviceSearch.addEventListener('input', (event) => {
 
 document.getElementById('serviceCategory').addEventListener('change', (event) => {
   const category = event.target.value;
-  const cleaningLabel = document.getElementById('cleaningLabel');
+  const drycleaningLabel = document.getElementById('drycleaningLabel');
   const extraLabel = document.getElementById('extraLabel');
-  if (category === 'cleaning') {
-    cleaningLabel.style.display = 'block';
+  if (category === 'drycleaning') {
+    drycleaningLabel.style.display = 'block';
     extraLabel.style.display = 'none';
-  } else {
-    cleaningLabel.style.display = 'none';
+  } else if (category === 'extra') {
+    drycleaningLabel.style.display = 'none';
     extraLabel.style.display = 'block';
+  } else {
+    drycleaningLabel.style.display = 'none';
+    extraLabel.style.display = 'none';
   }
 });
 
@@ -555,8 +650,20 @@ document.getElementById('ecoChemistryAmount').addEventListener('input', (e) => {
   updateTotal();
 });
 
-document.getElementById('pdfLanguage').addEventListener('change', (e) => {
-  pdfLanguage = e.target.value;
+document.getElementById('servicePriceRange').addEventListener('change', (e) => {
+  const isRange = e.target.checked;
+  const singlePriceLabel = document.getElementById('singlePriceLabel');
+  const minPriceLabel = document.getElementById('minPriceLabel');
+  const maxPriceLabel = document.getElementById('maxPriceLabel');
+  if (isRange) {
+    singlePriceLabel.style.display = 'none';
+    minPriceLabel.style.display = 'block';
+    maxPriceLabel.style.display = 'block';
+  } else {
+    singlePriceLabel.style.display = 'block';
+    minPriceLabel.style.display = 'none';
+    maxPriceLabel.style.display = 'none';
+  }
 });
 
 loadServices();
@@ -567,12 +674,15 @@ registerServiceWorker();
 
 // Initialize subcategory visibility
 const categorySelect = document.getElementById('serviceCategory');
-const cleaningLabel = document.getElementById('cleaningLabel');
+const drycleaningLabel = document.getElementById('drycleaningLabel');
 const extraLabel = document.getElementById('extraLabel');
-if (categorySelect.value === 'cleaning') {
-  cleaningLabel.style.display = 'block';
+if (categorySelect.value === 'drycleaning') {
+  drycleaningLabel.style.display = 'block';
   extraLabel.style.display = 'none';
-} else {
-  cleaningLabel.style.display = 'none';
+} else if (categorySelect.value === 'extra') {
+  drycleaningLabel.style.display = 'none';
   extraLabel.style.display = 'block';
+} else {
+  drycleaningLabel.style.display = 'none';
+  extraLabel.style.display = 'none';
 }
