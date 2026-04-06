@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Калькулятор клінінга</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#2d7aaf" />
+</head>
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Смартфон-френдлі PWA</p>
+        <h1>Калькулятор клінінга</h1>
+        <p>Менеджер може додавати послуги, змінювати ціни та отримувати підсумок.</p>
+      </div>
+      <button id="installButton" class="install-button">Встановити</button>
+    </header>
+
+    <section class="panel">
+      <h2>Менеджер: створити послугу</h2>
+      <form id="serviceForm" class="service-form">
+        <label>
+          Назва послуги
+          <input id="serviceName" type="text" required placeholder="Прибирання кухні" />
+        </label>
+        <label>
+          Ціна за одиницю (₴)
+          <input id="servicePrice" type="number" min="0" step="0.01" required placeholder="250" />
+        </label>
+        <label>
+          Категорія послуги
+          <select id="serviceCategory">
+            <option value="cleaning">Прибирання</option>
+            <option value="extra">Додаткові послуги</option>
+          </select>
+        </label>
+        <label id="cleaningLabel" class="subcategory-label">
+          Тип прибирання
+          <select id="serviceCleaningType">
+            <option value="підтримуюче прибирання">Підтримуюче прибирання</option>
+            <option value="Генеральне прибирання - Basic">Генеральне прибирання - Basic</option>
+            <option value="Генеральне прибирання - Standart">Генеральне прибирання - Standart</option>
+            <option value="Генеральне прибирання - Premium">Генеральне прибирання - Premium</option>
+          </select>
+        </label>
+        <label id="extraLabel" class="subcategory-label" style="display: none;">
+          Приміщення
+          <select id="serviceRoom">
+            <option value="кухня">Кухня</option>
+            <option value="санвузол">Санвузол</option>
+            <option value="вітальня">Вітальня</option>
+            <option value="спальня">Спальня</option>
+            <option value="балкон">Балкон</option>
+            <option value="веранда">Веранда</option>
+            <option value="подвір'я">Подвір'я</option>
+          </select>
+        </label>
+        <label>
+          Одиниця виміру
+          <select id="serviceUnit">
+            <option value="метр квадратний">Метр квадратний</option>
+            <option value="година">Година</option>
+            <option value="штука (шт)">Штука (шт)</option>
+          </select>
+        </label>
+        <button type="submit" class="primary">Додати послугу</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Список послуг</h2>
+      <div class="search-container">
+        <input id="serviceSearch" type="text" placeholder="Пошук послуг..." />
+      </div>
+      <div id="servicesList" class="services-list"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Калькулятор</h2>
+      <div id="orderPanel" class="order-panel"></div>
+      <div class="total-card">
+        <div>
+          <p>Загальна сума</p>
+          <strong id="orderTotal">RON 0.00</strong>
+        </div>
+        <button id="clearSelection" class="secondary">Очистити вибір</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
